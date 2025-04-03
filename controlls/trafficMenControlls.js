@@ -1,33 +1,33 @@
 const db = require('../database/dbConnection');
 
-exports.cheking = (req, res) => {
-    const { license_id} = req.body;
-    db.query('SELECT * FROM users WHERE license_id = ?', [license_id], (err, results) => {
-        if (err) {
-            return res.status(500).json({ message: 'Internal Server Error' });
-        }
-        if (results.length === 0) {
+exports.cheking = async(req, res) => {
+    try {
+        const { trafficId} = req.body;
+        const officers = await db.query('SELECT * FROM officers WHERE license_id = ?', [trafficId]);
+        if (officers.length === 0) {
             return res.status(404).json({ message: 'User not found' });
         }
-        res.status(200).json({results});
-    });
+        if(officers[0].active === false) {
+            return res.status(401).json({ message: 'officer is deactivated' });
+        }
+        res.status(200).json({users});
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 };
 
-exports.reports = (req, res) => {
+exports.reports = async (req, res) => {
+    try {
+        
     const { magaca, trafficId, degaanka, report} = req.body;
-    db.query('SELECT * FROM trafficreports WHERE license_id = ?', [trafficId], (err, results) => {
-        if (err) {
-            return res.status(500).json({ message: 'Internal Server Error' });
-        }
-        if (results.length === 0) {
+    const officers = await db.query('SELECT * FROM officers WHERE license_id = ?', [trafficId]);
+        if (officers.length === 0) {
             return res.status(404).json({ message: 'User not found' });
         }
-        db.query('INSERT INTO trafficreports (magaca, trafficId, degaanka, report) VALUES (?, ?, ?, ?)', [magaca, trafficId, degaanka, report], (err, results) => {
-            if (err) {
-                console.error('Error while inserting data: ', err);
-            }
-            res.status(200).json({message:'reported succsessfully'})
-        });
-    });
+        await db.query('INSERT INTO trafficreports (magaca, trafficId, degaanka, report) VALUES (?, ?, ?, ?)', [magaca, trafficId, degaanka, report]);
+        res.status(200).json({message:'reported successfully'})
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 };
 
